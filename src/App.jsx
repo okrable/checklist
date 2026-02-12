@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import congratsMessages from './data/congratsMessages.json'
 
 const STORAGE_KEY = 'daily-accountability-state'
@@ -83,8 +83,10 @@ export default function App() {
     message: '',
     streak: 0,
   })
+  const [lastCelebratedDate, setLastCelebratedDate] = useState(null)
 
   const todayKey = formatDateKey()
+  const previousAllDoneRef = useRef(false)
 
   const todayTasks = useMemo(() => {
     const saved = state.tasksByDate[todayKey]
@@ -102,15 +104,30 @@ export default function App() {
   }, [state])
 
   useEffect(() => {
-    if (!allDone || state.lastCompletedDate === todayKey) return
+    const justCompleted = !previousAllDoneRef.current && allDone
+    previousAllDoneRef.current = allDone
 
-    const nextStreak = state.streak + 1
+    if (!justCompleted || lastCelebratedDate === todayKey) {
+      return
+    }
 
-    setState((prev) => ({
-      ...prev,
-      streak: prev.streak + 1,
-      lastCompletedDate: todayKey,
-    }))
+    const shouldIncrementStreak = state.lastCompletedDate !== todayKey
+    const nextStreak = shouldIncrementStreak ? state.streak + 1 : state.streak
+
+    if (shouldIncrementStreak) {
+      setState((prev) => ({
+        ...prev,
+        streak: prev.streak + 1,
+        lastCompletedDate: todayKey,
+      }))
+    }
+
+    setCompletionModal({
+      open: true,
+      message: randomCongratsMessage(),
+      streak: nextStreak,
+    })
+    setLastCelebratedDate(todayKey)
 
     setCompletionModal({
       open: true,
@@ -131,7 +148,7 @@ export default function App() {
     }, 2600)
 
     return () => clearTimeout(timeout)
-  }, [allDone, todayKey, state.lastCompletedDate, state.streak])
+  }, [allDone, lastCelebratedDate, state.lastCompletedDate, state.streak, todayKey])
 
   const toggleTask = (index) => {
     const updated = todayTasks.map((task, idx) =>
@@ -148,6 +165,9 @@ export default function App() {
   }
 
   const resetToday = () => {
+    previousAllDoneRef.current = false
+    setLastCelebratedDate(null)
+
     setState((prev) => ({
       ...prev,
       tasksByDate: {
@@ -181,8 +201,6 @@ export default function App() {
       )}
 
       <section className="card">
-        <p className="date">{todayKey}</p>
-
         <div className="task-lights" aria-label="Task progress lights">
           {todayTasks.map((task) => (
             <span
