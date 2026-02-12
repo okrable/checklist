@@ -3,11 +3,12 @@ import congratsMessages from './data/congratsMessages.json'
 
 const STORAGE_KEY = 'daily-accountability-state'
 const GOALS = [
-  'Morning walk or movement',
-  'Deep work block (60+ min)',
-  'Healthy meals plan followed',
-  'Read 10 pages',
-  'Reflect + plan tomorrow',
+  '50 x Push Ups',
+  '50 x Sit Ups',
+  'Run',
+  'Gym',
+  'Strecth',
+  '4L Water'
 ]
 
 const CONFETTI_COLORS = ['#f43f5e', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7', '#14b8a6']
@@ -211,11 +212,6 @@ export default function App() {
           ))}
         </div>
 
-        <div className="streak-wrap">
-          <span className="streak-label">Current streak</span>
-          <strong>{state.streak} day{state.streak === 1 ? '' : 's'}</strong>
-        </div>
-
         <ul className="goal-list">
           {todayTasks.map((task, index) => (
             <li key={task.label}>
@@ -239,6 +235,13 @@ export default function App() {
           </button>
         </div>
       </section>
+
+      <div className="streak-footer" aria-label={`Streak ${state.streak}`}>
+        <svg className="streak-flame" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2L9 6.5L5 5.5L7 10L4 9.5L6.5 14.5L12 22L17.5 14.5L20 9.5L17 10L19 5.5L15 6.5L12 2Z" />
+          <text x="12" y="13" textAnchor="middle" dominantBaseline="middle">{state.streak}</text>
+        </svg>
+      </div>
 
       {completionModal.open && (
         <div className="modal-root" role="dialog" aria-modal="true" aria-labelledby="completion-title">

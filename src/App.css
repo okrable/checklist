@@ -18,6 +18,7 @@ body {
   display: grid;
   place-items: center;
   padding: 40px;
+  position: relative;
 }
 
 .card {
@@ -58,9 +59,32 @@ body {
   font-size: 1.25rem;
 }
 
-.streak-label {
-  color: #cbd5e1;
-  font-size: 1rem;
+.streak-footer {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(226, 232, 240, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.streak-flame {
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 2px 8px rgba(2, 6, 23, 0.6));
+}
+
+.streak-flame path {
+  fill: rgba(244, 63, 94, 0.85);
+}
+
+.streak-flame text {
+  fill: #0f172a;
+  font-size: 9px;
+  font-weight: 700;
 }
 
 .goal-list {
