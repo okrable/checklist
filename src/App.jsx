@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import congratsMessages from './data/congratsMessages.json'
 
 const STORAGE_KEY = 'daily-accountability-state'
 const GOALS = [
@@ -70,12 +71,22 @@ const createConfetti = (count = 100) =>
     color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
   }))
 
+const randomCongratsMessage = () =>
+  congratsMessages[Math.floor(Math.random() * congratsMessages.length)]
+
 export default function App() {
   const [state, setState] = useState(getInitialState)
   const [showCelebration, setShowCelebration] = useState(false)
   const [confetti, setConfetti] = useState([])
+  const [completionModal, setCompletionModal] = useState({
+    open: false,
+    message: '',
+    streak: 0,
+  })
+  const [lastCelebratedDate, setLastCelebratedDate] = useState(null)
 
   const todayKey = formatDateKey()
+  const previousAllDoneRef = useRef(false)
 
   const todayTasks = useMemo(() => {
     const saved = state.tasksByDate[todayKey]
@@ -93,13 +104,30 @@ export default function App() {
   }, [state])
 
   useEffect(() => {
-    if (!allDone || state.lastCompletedDate === todayKey) return
+    const justCompleted = !previousAllDoneRef.current && allDone
+    previousAllDoneRef.current = allDone
 
-    setState((prev) => ({
-      ...prev,
-      streak: prev.streak + 1,
-      lastCompletedDate: todayKey,
-    }))
+    if (!justCompleted || lastCelebratedDate === todayKey) {
+      return
+    }
+
+    const shouldIncrementStreak = state.lastCompletedDate !== todayKey
+    const nextStreak = shouldIncrementStreak ? state.streak + 1 : state.streak
+
+    if (shouldIncrementStreak) {
+      setState((prev) => ({
+        ...prev,
+        streak: prev.streak + 1,
+        lastCompletedDate: todayKey,
+      }))
+    }
+
+    setCompletionModal({
+      open: true,
+      message: randomCongratsMessage(),
+      streak: nextStreak,
+    })
+    setLastCelebratedDate(todayKey)
 
     const canAnimate = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -114,7 +142,7 @@ export default function App() {
     }, 2600)
 
     return () => clearTimeout(timeout)
-  }, [allDone, todayKey, state.lastCompletedDate])
+  }, [allDone, lastCelebratedDate, state.lastCompletedDate, state.streak, todayKey])
 
   const toggleTask = (index) => {
     const updated = todayTasks.map((task, idx) =>
@@ -131,6 +159,9 @@ export default function App() {
   }
 
   const resetToday = () => {
+    previousAllDoneRef.current = false
+    setLastCelebratedDate(null)
+
     setState((prev) => ({
       ...prev,
       tasksByDate: {
@@ -164,22 +195,19 @@ export default function App() {
       )}
 
       <section className="card">
-        <p className="date">{todayKey}</p>
-        <h1>Daily Accountability</h1>
-        <p className="subtitle">Check off every goal to extend your streak.</p>
+        <div className="task-lights" aria-label="Task progress lights">
+          {todayTasks.map((task) => (
+            <span
+              key={`light-${task.label}`}
+              className={`task-light ${task.done ? 'done' : ''}`}
+              aria-hidden="true"
+            />
+          ))}
+        </div>
 
         <div className="streak-wrap">
           <span className="streak-label">Current streak</span>
           <strong>{state.streak} day{state.streak === 1 ? '' : 's'}</strong>
-        </div>
-
-        <div className="progress-wrap">
-          <div className="progress-bar" aria-hidden="true">
-            <span style={{ width: `${(completedCount / GOALS.length) * 100}%` }} />
-          </div>
-          <small>
-            {completedCount} / {GOALS.length} completed
-          </small>
         </div>
 
         <ul className="goal-list">
@@ -190,8 +218,10 @@ export default function App() {
                   type="checkbox"
                   checked={task.done}
                   onChange={() => toggleTask(index)}
+                  className="task-checkbox"
+                  aria-label={task.label}
                 />
-                <span>{task.label}</span>
+                <span className={task.done ? 'done' : ''}>{task.label}</span>
               </label>
             </li>
           ))}
@@ -202,13 +232,21 @@ export default function App() {
             Reset today
           </button>
         </div>
-
-        {allDone && (
-          <div className="reward-box" role="status">
-            🎉 Nice work! All goals done for today.
-          </div>
-        )}
       </section>
+
+      {completionModal.open && (
+        <div className="modal-root" role="dialog" aria-modal="true" aria-labelledby="completion-title">
+          <div className="modal-overlay" onClick={() => setCompletionModal((prev) => ({ ...prev, open: false }))} />
+          <div className="modal-content">
+            <h2 id="completion-title">Day Complete 🎉</h2>
+            <p>{completionModal.message}</p>
+            <p className="modal-streak">Streak increased to {completionModal.streak}.</p>
+            <button type="button" onClick={() => setCompletionModal((prev) => ({ ...prev, open: false }))}>
+              Awesome
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
