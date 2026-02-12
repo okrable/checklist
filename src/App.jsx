@@ -129,6 +129,12 @@ export default function App() {
     })
     setLastCelebratedDate(todayKey)
 
+    setCompletionModal({
+      open: true,
+      message: randomCongratsMessage(),
+      streak: nextStreak,
+    })
+
     const canAnimate = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     if (!canAnimate) return
